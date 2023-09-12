@@ -54,36 +54,36 @@ async def on_message(message):
         return
     elif message.content.lower().startswith('!nick'):
         print(message.author)
-        nicksExuses = [
-                'I have to jerk off my brother for the next 9 hours',
-                'I am making food should take ten minutes (doesn\’t join for two hours)',
-                'I\’m eating so I have to watch hentai to digest better',
-                'I\’m chilling with my family',
-                'Scouting for barn animals',
-                'Cleaning out my gecko\’s asshole with my tongue',
-                'I\’m being pussy cause you guys said mean words to me',
-                'I wanna jerk off to hermione in hogwarts legacy',
-                'I had a really hard day at my 13 dollar an hour job that is much more important and difficult than michael\’s',
-                'I had to sleep in til 4pm cause I am a fat piece of garbage who peaked inside the womb',
-                'I can\’t play fortnite because there are no females online',
-                'I am too busy dreaming about keira and her curves to get on right now',
-                'I have my cancer treatments today',
-                'There is a 14 year old girl in my area who appears to be single and ready to mingle',
-                'I\’m getting a haircut',
-                'Sorry I just matched with keira on tinder again she says we can work it out.',
-                'My mom has to drive me to school',
-                'It\’s my nieces birthday tomorrow',
-                ('I require myself to read 10 chapters a day but don’t know what a book is or how to read one so I end up '
-                'just sticking it in my ass'),
-                ('I have to be up for 12 hours straight tomorrow which will interfere with my regularly scheduled 15 hr '
-                'sleep time'),
-                'I am a piece of shit who is going nowhere in life',
-                'I have no friends just people who enjoy shitting on me',
-                'I need in to be in bed at an outrageously early time for no fucking reason because I hate my life and am '
-                'nothing but a floating piece of garbage in the wind',
-                'I gave my brother my hard drive for some reason',
+        nicks_excuses = [
+            'I have to jerk off my brother for the next 9 hours',
+            'I am making food should take ten minutes (doesn\’t join for two hours)',
+            'I\’m eating so I have to watch hentai to digest better',
+            'I\’m chilling with my family',
+            'Scouting for barn animals',
+            'Cleaning out my gecko\’s asshole with my tongue',
+            'I\’m being pussy cause you guys said mean words to me',
+            'I wanna jerk off to hermione in hogwarts legacy',
+            'I had a really hard day at my 13 dollar an hour job that is much more important and difficult than michael\’s',
+            'I had to sleep in til 4pm cause I am a fat piece of garbage who peaked inside the womb',
+            'I can\’t play fortnite because there are no females online',
+            'I am too busy dreaming about keira and her curves to get on right now',
+            'I have my cancer treatments today',
+            'There is a 14 year old girl in my area who appears to be single and ready to mingle',
+            'I\’m getting a haircut',
+            'Sorry I just matched with keira on tinder again she says we can work it out.',
+            'My mom has to drive me to school',
+            'It\’s my nieces birthday tomorrow',
+            ('I require myself to read 10 chapters a day but don’t know what a book is or how to read one so I end up '
+             'just sticking it in my ass'),
+            ('I have to be up for 12 hours straight tomorrow which will interfere with my regularly scheduled 15 hr '
+             'sleep time'),
+            'I am a piece of shit who is going nowhere in life',
+            'I have no friends just people who enjoy shitting on me',
+            'I need in to be in bed at an outrageously early time for no fucking reason because I hate my life and am '
+            'nothing but a floating piece of garbage in the wind',
+            'I gave my brother my hard drive for some reason',
         ]
-        response = random.choice(nicksExuses)
+        response = random.choice(nicks_excuses)
         await message.channel.send(response)
         return
     elif message.content.startswith('!play'):
@@ -92,7 +92,7 @@ async def on_message(message):
         print(ytSearch)
         urlformat = urllib.parse.quote(ytSearch)
         firefox = webbrowser.Mozilla("C:\\Program Files\\Mozilla Firefox\\firefox.exe")
-        firefox.open("www.youtube.com/results?search_query="+urlformat)
+        firefox.open("www.youtube.com/results?search_query=" + urlformat)
         return
         url = ''
         author = message.author
