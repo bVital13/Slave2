@@ -16,6 +16,9 @@ import googleapiclient.discovery
 import googleapiclient.errors
 import youtube_dl
 import json
+import apiclient
+import oauth2client
+from apiclient.discovery import build
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
@@ -27,6 +30,7 @@ api_version = "v3"
 client_secrets_file = "client_secret_968308793038-ka7kdkjffsfjdiqm749hgsctf76pjjuu.apps.googleusercontent.com (1).json"
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
+KEY = os.getenv('YOUTUBE_API_KEY')
 
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
@@ -102,38 +106,14 @@ async def on_message(message):
         ytSearch = message.content[6:]
         print(ytSearch)
         urlformat = urllib.parse.quote(ytSearch)
-        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            client_secrets_file, scopes)
-        authorization_url, state = flow.authorization_url(
-            # Enable offline access so that you can refresh an access token without
-            # re-prompting the user for permission. Recommended for web server apps.
-            access_type='offline',
-            # Enable incremental authorization. Recommended as a best practice.
-            include_granted_scopes='true')
-        credentials = flow.run_console()
-        youtube = googleapiclient.discovery.build(
-            api_service_name, api_version, credentials=credentials)
-        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-        request = youtube.search().list(
-            part="snippet",
-            maxResults=25,
-            q=ytSearch
-        )
-        response = request.execute()
-        print(response)
-        y = json.load(response)
-        videoId = y[0]['eTag']
+        youtube = build('youtube', 'v3', developerKey=KEY)
+        request = youtube.search().list(q=ytSearch, part='id', type='video')
+        res = request.execute()
+        videoId = res['items'][0]['id']['videoId']
         url = 'https://www.youtube.com/watch?v=' + videoId
         print(url)
-        return
-
-        author = message.author
-        vc = author.voice.channel
-        print(vc)
-        v = await vc.connect()
-        player = await vc.create_ytdl_player(url)
-        player.start()
-        v = await vc.disconnect()
-        return
+        await message.channel.send(
+            f'Here\'s the next video: {url}. Enjoy!'
+        )
 
 client.run(TOKEN)
