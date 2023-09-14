@@ -8,23 +8,23 @@
 import os
 import random
 import urllib
-import webbrowser
+import pafy
+import discord
+from apiclient.discovery import build
+from discord import FFmpegPCMAudio
+import asyncio
 
 import discord
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-import googleapiclient.errors
 import youtube_dl
-import json
-import apiclient
-import oauth2client
-from apiclient.discovery import build
 
 import main
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
 from dotenv import load_dotenv
+from discord.ext import commands
+
+youtube_dl.utils.bug_reports_message = lambda: ''
 
 load_dotenv()
 api_service_name = "youtube"
@@ -39,6 +39,92 @@ logFile.close()
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
 print(TOKEN)
+FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+videoQueue = []
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+
+        self.data = data
+
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
+
+class Music(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command(description="joins a voice channel")
+    async def join(self, ctx):
+        if ctx.author.voice is None or ctx.author.voice.channel is None:
+            return await ctx.send('You need to be in a voice channel to use this command!')
+
+        voice_channel = ctx.author.voice.channel
+        if ctx.voice_client is None:
+            vc = await voice_channel.connect()
+        else:
+            await ctx.voice_client.move_to(voice_channel)
+            vc = ctx.voice_client
+
+    @commands.command(description="streams music")
+    async def play(self, ctx, *, url):
+        async with ctx.typing():
+            player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+            ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+        await ctx.send('Now playing: {}'.format(player.title))
+
+    @commands.command(description="stops and disconnects the bot from voice")
+    async def leave(self, ctx):
+        await ctx.voice_client.disconnect()
+
+    @play.before_invoke
+    async def ensure_voice(self, ctx):
+        if ctx.voice_client is None:
+            if ctx.author.voice:
+                await ctx.author.voice.channel.connect()
+            else:
+                await ctx.send("You are not connected to a voice channel.")
+                raise commands.CommandError("Author not connected to a voice channel.")
+        elif ctx.voice_client.is_playing():
+            ctx.voice_client.stop()
+
+
+def setup(bot):
+    bot.add_cog(Music(bot))
 
 
 @client.event
@@ -106,6 +192,13 @@ async def on_message(message):
         await message.channel.send(response)
         return
     elif message.content.startswith('!play'):
+        channel = message.channel
+        voice = discord.utils.get(message.guild.voice_channels, name=channel.name)
+        voice_client = discord.utils.get(client.voice_clients, guild=GUILD)
+        if voice_client is None:
+            voice_client = await voice.connect()
+        else:
+            await voice_client.move_to(channel)
         if main.requestToday > 99:
             await message.channel.send(
                 f'Sorry you are out of requests for the day please try again tomorrow'
@@ -128,6 +221,16 @@ async def on_message(message):
         main.requestToday = main.requestToday + 1
         main.logFile.write(f'{main.requestToday}')
         main.logFile.close()
+        await play(message, url, voice_client)
         return
+
+
+async def play(ctx, url, voice_client):
+    await ctx.channel.send(url)
+    song = pafy.new(url)
+    audio = song.getbestaudio()
+    source = FFmpegPCMAudio(audio.url, **FFMPEG_OPTIONS)
+    voice_client.play(source)
+    return
 
 client.run(TOKEN)
