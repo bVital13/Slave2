@@ -20,6 +20,8 @@ import apiclient
 import oauth2client
 from apiclient.discovery import build
 
+import main
+
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
 from dotenv import load_dotenv
@@ -31,7 +33,9 @@ client_secrets_file = "client_secret_968308793038-ka7kdkjffsfjdiqm749hgsctf76pjj
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 KEY = os.getenv('YOUTUBE_API_KEY')
-
+logFile = open("apiRequest.log", "r")
+requestToday = int(logFile.read())
+logFile.close()
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
 print(TOKEN)
@@ -102,6 +106,11 @@ async def on_message(message):
         await message.channel.send(response)
         return
     elif message.content.startswith('!play'):
+        if main.requestToday > 99:
+            await message.channel.send(
+                f'Sorry you are out of requests for the day please try again tomorrow'
+            )
+            return
         print('here')
         ytSearch = message.content[6:]
         print(ytSearch)
@@ -115,5 +124,10 @@ async def on_message(message):
         await message.channel.send(
             f'Here\'s the next video: {url}. Enjoy!'
         )
+        main.logFile = open("apiRequest.log", "w")
+        main.requestToday = main.requestToday + 1
+        main.logFile.write(f'{main.requestToday}')
+        main.logFile.close()
+        return
 
 client.run(TOKEN)
